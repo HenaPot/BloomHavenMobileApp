@@ -1,15 +1,9 @@
-import { Text, View } from "react-native";
+import Login from "@/screens/Login";
+import OrderDetails from "@/screens/OrderDetails";
+import Signup from "@/screens/Signup";
 
 export default function App() {
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text>I am ediing in hope...</Text>
-    </View>
+    <OrderDetails/>
   );
 }
