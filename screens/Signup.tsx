@@ -1,6 +1,6 @@
 import BloomDatePicker from "@/components/BloomDatePicker";
 import BloomTextInput from "@/components/BloomTextInput";
-import DefaultButton from "@/components/DefaultButton";
+import BloomButton from "@/components/BloomButton";
 import InputLabel from "@/components/InputLabel";
 import { colors } from "@/constants/colors";
 import React from "react";
@@ -96,7 +96,7 @@ const Signup = () => {
         </Text>
 
         <View style={styles.buttonContainer}>
-          <DefaultButton text="Sign Up" onClick={() => alert("Sign Up")} />
+          <BloomButton text="Sign Up" onPress={() => alert("Sign Up")} />
         </View>
       </View>
     </ScrollView>
@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     marginVertical: 40,
     width: "100%",
-    height: 56,
+    height: 48,
   },
 });
 

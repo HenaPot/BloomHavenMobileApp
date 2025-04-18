@@ -5,10 +5,9 @@ import {
   StyleSheet,
   Image,
   ScrollView,
-  TouchableOpacity,
 } from "react-native";
 import BloomTextInput from "@/components/BloomTextInput";
-import DefaultButton from "@/components/DefaultButton";
+import BloomButton from "@/components/BloomButton";
 import { colors } from "@/constants/colors";
 
 const Product = () => {
@@ -58,16 +57,16 @@ const Product = () => {
 
         {/* Buttons */}
         <View style={styles.buttonContainer}>
-          <DefaultButton
+          <BloomButton
             text="Add to Cart"
-            onClick={() => alert(`Added ${quantity} item(s) to cart`)}
+            onPress={() => alert(`Added ${quantity} item(s) to cart`)}
+            style={{ marginBottom: 10 }}
           />
-          <TouchableOpacity
-            style={styles.secondaryButton}
+          <BloomButton
+            text="Add to Wishlist"
             onPress={() => alert("Added to Wishlist")}
-          >
-            <Text style={styles.secondaryButtonText}>Add to Wishlist</Text>
-          </TouchableOpacity>
+            type="secondary"
+          />
         </View>
       </View>
     </ScrollView>
@@ -131,18 +130,6 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     marginTop: 20,
-  },
-  secondaryButton: {
-    marginTop: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  secondaryButtonText: {
-    color: colors.secondary,
-    fontWeight: "bold",
   },
 });
 

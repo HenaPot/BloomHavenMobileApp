@@ -1,5 +1,5 @@
 import BloomTextInput from "@/components/BloomTextInput";
-import DefaultButton from "@/components/DefaultButton";
+import BloomButton from "@/components/BloomButton";
 import InputLabel from "@/components/InputLabel";
 import { colors } from "@/constants/colors";
 
@@ -41,9 +41,9 @@ const Login = () => {
 
       
       <View style={styles.buttonContainer}>
-      <DefaultButton
+      <BloomButton
         text="Log In"
-        onClick={() => alert("Log In")}/>
+        onPress={() => alert("Log In")}/>
       </View>
     </View>
   );    
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     buttonContainer: {
         marginTop: 40,
         width: "90%",  
-        height: 56,
+        height: 48,
     }
 });
 

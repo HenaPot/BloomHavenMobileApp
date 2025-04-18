@@ -4,11 +4,10 @@ import {
   Text,
   StyleSheet,
   Image,
-  TouchableOpacity,
   ScrollView,
   Alert,
 } from "react-native";
-import DefaultButton from "@/components/DefaultButton";
+import BloomButton from "@/components/BloomButton";
 import EditProfileBottomSheet from "@/components/EditProfileBottomSheet";
 import { colors } from "@/constants/colors";
 
@@ -76,12 +75,14 @@ const Profile = () => {
 
           {/* Buttons */}
           <View style={styles.buttonContainer}>
-            <DefaultButton
+            <BloomButton
               text="Edit My Profile"
-              onClick={() => setEditProfileVisible(true)}
+              onPress={() => setEditProfileVisible(true)}
+              style={{ marginBottom: 10 }}
             />
-            <TouchableOpacity
-              style={styles.deleteButton}
+            <BloomButton
+              text="Delete My Profile"
+              type="danger"
               onPress={() => {
                 Alert.alert(
                   "Delete Profile",
@@ -92,9 +93,7 @@ const Profile = () => {
                   ]
                 );
               }}
-            >
-              <Text style={styles.deleteButtonText}>Delete My Profile</Text>
-            </TouchableOpacity>
+            />
           </View>
         </View>
       </ScrollView>
@@ -161,19 +160,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     marginTop: 20,
-  },
-  deleteButton: {
-    marginTop: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: colors.danger, // Bootstrap red color
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  deleteButtonText: {
-    color: colors.danger,
-    fontWeight: "bold",
-  },
+  }
 });
 
 export default Profile;

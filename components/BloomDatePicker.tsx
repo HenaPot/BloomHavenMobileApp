@@ -1,26 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TextInput, StyleSheet, View, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { colors } from '@/constants/colors';
 
-const BloomDatePicker = ({ placeholder = "Select a date", ...restOfProps }) => {
-  const [date, setDate] = useState<Date | null>(null);
+interface BloomDatePickerProps {
+  value?: string; // ISO date string, e.g. "1990-01-01"
+  onChangeText?: (dateString: string) => void;
+  placeholder?: string;
+}
+
+const BloomDatePicker: React.FC<BloomDatePickerProps> = ({
+  value,
+  onChangeText,
+  placeholder = "Select a date",
+  ...restOfProps
+}) => {
+  // For uncontrolled usage (like Signup)
+  const [internalDate, setInternalDate] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
 
-const onChange = (event: any, selectedDate?: Date): void => {
+  // Use value prop if provided, otherwise use internal state
+  const dateValue = value ? new Date(value) : internalDate;
+
+  // Keep internal state in sync if value prop changes (for controlled usage)
+  useEffect(() => {
+    if (value) {
+      setInternalDate(new Date(value));
+    }
+  }, [value]);
+
+  const handleChange = (event: any, selectedDate?: Date) => {
     setShowPicker(false);
     if (selectedDate) {
-        setDate(selectedDate);
+      if (onChangeText) {
+        // Controlled: call parent
+        const isoString = selectedDate.toISOString().split("T")[0];
+        onChangeText(isoString);
+      } else {
+        // Uncontrolled: update internal state
+        setInternalDate(selectedDate);
+      }
     }
-};
+  };
 
   return (
     <View style={styles.input}>
       <TextInput
-        value={date ? date.toLocaleDateString() : ""}
+        value={dateValue ? dateValue.toLocaleDateString() : ""}
         placeholder={placeholder}
-        editable={false} // Prevent manual input
+        editable={false}
         style={styles.textInput}
         {...restOfProps}
       />
@@ -30,14 +59,11 @@ const onChange = (event: any, selectedDate?: Date): void => {
       {showPicker && (
         <DateTimePicker
           maximumDate={new Date()}
-          minimumDate={new Date(1900, 0, 1)} 
-          negativeButton={{ label: 'Cancel', textColor: colors.secondary }}
-          positiveButton={{ label: 'OK', textColor: colors.primary }}
-          textColor={colors.primary}
-          value={date || new Date()} // Default to today's date
+          minimumDate={new Date(1900, 0, 1)}
+          value={dateValue || new Date()}
           mode="date"
           display="spinner"
-          onChange={onChange}
+          onChange={handleChange}
         />
       )}
     </View>

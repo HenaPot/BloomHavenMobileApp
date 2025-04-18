@@ -3,15 +3,14 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
-  FlatList,
-  Modal,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import { colors } from "@/constants/colors";
 import BloomTextInput from "@/components/BloomTextInput";
+import BloomButton from "./BloomButton";
+import CategoryChips from "./CategoryChips";
+import OptionButtonGroup from "./OptionButtonGroup";
+import BloomBottomSheet from "./BloomBottomSheet";
 
 const categories = ["Shoes", "Watches", "Bags", "Clothing", "Accessories"];
 const priceRanges = ["$0 - $50", "$50 - $100", "$100 - $250", "$250 - $500", "$500+"];
@@ -28,7 +27,11 @@ interface SearchAndFilterProps {
   }) => void;
 }
 
-const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ visible, onClose, onApplyFilters }) => {
+const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
+  visible,
+  onClose,
+  onApplyFilters,
+}) => {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedPriceRange, setSelectedPriceRange] = useState<string | null>(null);
@@ -61,128 +64,66 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({ visible, onClose, onA
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <KeyboardAvoidingView
-        style={styles.modalContainer}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
-        <View style={styles.sheet}>
-          <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <Text style={styles.title}>Search and Filters</Text>
+    <BloomBottomSheet visible={visible} onClose={onClose}>
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>Search and Filters</Text>
 
-            {/* Search */}
-            <View style={{ marginBottom: 15 }}>
-              <Text style={styles.sectionTitle}>Search</Text>
-              <BloomTextInput
-                placeholder="Search products..."
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
-
-            {/* Categories */}
-            <Text style={styles.sectionTitle}>Select Categories</Text>
-            <FlatList
-              data={categories}
-              horizontal
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={[
-                    styles.chip,
-                    selectedCategories.includes(item) && styles.chipSelected,
-                  ]}
-                  onPress={() => toggleCategory(item)}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      selectedCategories.includes(item) && styles.chipTextSelected,
-                    ]}
-                  >
-                    {item}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              contentContainerStyle={styles.chipContainer}
-            />
-
-            {/* Price Range */}
-            <Text style={styles.sectionTitle}>Price Range</Text>
-            {priceRanges.map((range) => (
-              <TouchableOpacity
-                key={range}
-                style={[
-                  styles.dropdownItem,
-                  selectedPriceRange === range && styles.dropdownItemSelected,
-                ]}
-                onPress={() => setSelectedPriceRange(range)}
-              >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    selectedPriceRange === range && styles.dropdownTextSelected,
-                  ]}
-                >
-                  {range}
-                </Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* Sort By */}
-            <Text style={styles.sectionTitle}>Sort By</Text>
-            {sortOptions.map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={[
-                  styles.dropdownItem,
-                  selectedSortOption === option && styles.dropdownItemSelected,
-                ]}
-                onPress={() => setSelectedSortOption(option)}
-              >
-                <Text
-                  style={[
-                    styles.dropdownText,
-                    selectedSortOption === option && styles.dropdownTextSelected,
-                  ]}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-
-          {/* Buttons */}
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.button} onPress={clearFilters}>
-              <Text style={styles.buttonText}>Clear</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={applyFilters}>
-              <Text style={styles.buttonText}>Apply</Text>
-            </TouchableOpacity>
-          </View>
+        {/* Search */}
+        <View style={{ marginBottom: 15 }}>
+          <Text style={styles.sectionTitle}>Search</Text>
+          <BloomTextInput
+            placeholder="Search products..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
-      </KeyboardAvoidingView>
-    </Modal>
+
+        {/* Categories */}
+        <Text style={styles.sectionTitle}>Select Categories</Text>
+        <CategoryChips
+          categories={categories}
+          selectedCategories={selectedCategories}
+          onToggleCategory={toggleCategory}
+        />
+
+        {/* Price Range */}
+        <Text style={styles.sectionTitle}>Price Range</Text>
+        <OptionButtonGroup
+          options={priceRanges}
+          selectedOption={selectedPriceRange}
+          onSelect={setSelectedPriceRange}
+        />
+
+        {/* Sort By */}
+        <Text style={styles.sectionTitle}>Sort By</Text>
+        <OptionButtonGroup
+          options={sortOptions}
+          selectedOption={selectedSortOption}
+          onSelect={setSelectedSortOption}
+        />
+      </ScrollView>
+
+      {/* Buttons */}
+      <View style={styles.buttonContainer}>
+        <BloomButton
+          text="Clear"
+          onPress={clearFilters}
+          style={{ marginRight: 10 }}
+          type="secondary"
+        />
+        <BloomButton
+          text="Apply"
+          onPress={applyFilters}
+        />
+      </View>
+    </BloomBottomSheet>
   );
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  sheet: {
-    backgroundColor: colors.primary,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "90%",
-  },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 80, // Add padding to avoid overlap with buttons
+    paddingBottom: 80,
   },
   title: {
     fontSize: 20,
@@ -195,43 +136,6 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginVertical: 10,
   },
-  chipContainer: {
-    flexDirection: "row",
-    marginBottom: 20,
-  },
-  chip: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    marginRight: 10,
-  },
-  chipSelected: {
-    backgroundColor: colors.secondary,
-  },
-  chipText: {
-    color: colors.secondary,
-  },
-  chipTextSelected: {
-    color: colors.primary,
-  },
-  dropdownItem: {
-    padding: 10,
-    borderWidth: 1,
-    borderColor: colors.secondary,
-    borderRadius: 5,
-    marginBottom: 10,
-  },
-  dropdownItemSelected: {
-    backgroundColor: colors.secondary,
-  },
-  dropdownText: {
-    color: colors.secondary,
-  },
-  dropdownTextSelected: {
-    color: colors.primary,
-  },
   buttonContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -239,18 +143,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
     borderTopWidth: 1,
     borderTopColor: colors.secondary,
-  },
-  button: {
-    flex: 1,
-    padding: 10,
-    marginHorizontal: 5,
-    backgroundColor: colors.secondary,
-    borderRadius: 5,
-    alignItems: "center",
-  },
-  buttonText: {
-    color: colors.primary,
-    fontWeight: "bold",
   },
 });
 
