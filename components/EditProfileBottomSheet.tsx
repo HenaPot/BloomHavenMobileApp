@@ -1,12 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  Modal,
   ScrollView,
-  KeyboardAvoidingView,
-  Platform,
 } from "react-native";
 import BloomTextInput from "@/components/BloomTextInput";
 import BloomDatePicker from "@/components/BloomDatePicker";
@@ -19,17 +16,17 @@ interface EditProfileBottomSheetProps {
   visible: boolean;
   onClose: () => void;
   onSaveChanges: (updatedProfile: {
-    profilePicture: string | null;
+    image: string | null;
     username: string;
-    dateOfBirth: string;
+    date_of_birth: string;
     name: string;
     email: string;
     address: string;
   }) => void;
   existingData: {
-    profilePicture: string | null;
+    image: string | null;
     username: string;
-    dateOfBirth: string;
+    date_of_birth: string;
     name: string;
     email: string;
     address: string;
@@ -42,20 +39,30 @@ const EditProfileBottomSheet: React.FC<EditProfileBottomSheetProps> = ({
   onSaveChanges,
   existingData,
 }) => {
-  const [profilePicture, setProfilePicture] = useState<string | null>(
-    existingData.profilePicture
-  );
+  const [image, setImage] = useState<string | null>(existingData.image);
   const [username, setUsername] = useState(existingData.username);
-  const [dateOfBirth, setDateOfBirth] = useState(existingData.dateOfBirth);
+  const [date_of_birth, setDateOfBirth] = useState(existingData.date_of_birth);
   const [name, setName] = useState(existingData.name);
   const [email, setEmail] = useState(existingData.email);
   const [address, setAddress] = useState(existingData.address);
 
+  // Sync state with props when opening
+  useEffect(() => {
+    if (visible) {
+      setImage(existingData.image);
+      setUsername(existingData.username);
+      setDateOfBirth(existingData.date_of_birth);
+      setName(existingData.name);
+      setEmail(existingData.email);
+      setAddress(existingData.address);
+    }
+  }, [visible, existingData]);
+
   const handleSaveChanges = () => {
     onSaveChanges({
-      profilePicture,
+      image,
       username,
-      dateOfBirth,
+      date_of_birth,
       name,
       email,
       address,
@@ -70,7 +77,7 @@ const EditProfileBottomSheet: React.FC<EditProfileBottomSheetProps> = ({
         <Text style={styles.sectionTitle}>Profile Picture</Text>
         <View style={styles.profilePictureWrapper}>
           <ProfilePictureButton
-            profilePicture={profilePicture}
+            profilePicture={image}
             onPress={() => alert("Change Profile Picture")}
           />
         </View>
@@ -90,7 +97,7 @@ const EditProfileBottomSheet: React.FC<EditProfileBottomSheetProps> = ({
           <Text style={styles.sectionTitle}>Date of Birth</Text>
           <BloomDatePicker
             placeholder="Select your date of birth"
-            value={dateOfBirth}
+            value={date_of_birth}
             onChangeText={setDateOfBirth}
           />
         </View>

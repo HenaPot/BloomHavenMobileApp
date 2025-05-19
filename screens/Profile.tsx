@@ -10,36 +10,30 @@ import {
 import BloomButton from "@/components/BloomButton";
 import EditProfileBottomSheet from "@/components/EditProfileBottomSheet";
 import { colors } from "@/constants/colors";
+import { useSelector, useDispatch } from "react-redux";
+import { RootState, AppDispatch } from "@/redux/store";
+import { logout, updateProfile, User } from "@/redux/userSlice";
 
 const Profile = () => {
   const [editProfileVisible, setEditProfileVisible] = useState(false);
+  const user = useSelector((state: RootState) => state.user.user);
+  const dispatch = useDispatch<AppDispatch>();
 
-  const user = {
-    profilePicture:
-      "https://images.immediate.co.uk/production/volatile/sites/10/2018/02/4f492b22-2d29-4360-80a6-79879487c7b7-e07922e.jpg?quality=90&fit=700,466",
-    name: "John Doe",
-    role: "Customer",
-    username: "johndoe123",
-    email: "johndoe@example.com",
-    dateOfBirth: "1990-01-01",
-    address: "123 Main Street, Springfield, USA",
+  const handleSaveChanges = (updatedProfile: Partial<User>) => {
+    dispatch(updateProfile(updatedProfile));
   };
 
-  const handleSaveChanges = (updatedProfile: {
-    profilePicture: string | null;
-    username: string;
-    dateOfBirth: string;
-    name: string;
-    email: string;
-    address: string;
-  }) => {
-    const mappedProfile = {
-      ...updatedProfile,
-      role: user.role, // Assuming role remains unchanged
-    };
-    console.log("Updated Profile:", mappedProfile);
-    // Update the user data here (e.g., send to API or update state)
+  const handleLogout = () => {
+    dispatch(logout());
   };
+
+  if (!user) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <Text style={{ color: colors.text }}>No user data.</Text>
+      </View>
+    );
+  }
 
   return (
     <>
@@ -50,13 +44,17 @@ const Profile = () => {
 
           {/* Profile Picture */}
           <Image
-            source={{ uri: user.profilePicture }}
+            source={
+              user.image
+                ? { uri: user.image }
+                : require("@/assets/default-profile.png")
+            }
             style={styles.profilePicture}
           />
 
           {/* User's Name and Role */}
           <Text style={styles.name}>{user.name}</Text>
-          <Text style={styles.role}>{user.role}</Text>
+          <Text style={styles.role}>{user.role_id}</Text>
 
           {/* User Details */}
           <View style={styles.detailsContainer}>
@@ -67,7 +65,7 @@ const Profile = () => {
             <Text style={styles.detailValue}>{user.email}</Text>
 
             <Text style={styles.detailLabel}>Date of Birth:</Text>
-            <Text style={styles.detailValue}>{user.dateOfBirth}</Text>
+            <Text style={styles.detailValue}>{user.date_of_birth}</Text>
 
             <Text style={styles.detailLabel}>Address:</Text>
             <Text style={styles.detailValue}>{user.address}</Text>
@@ -89,7 +87,7 @@ const Profile = () => {
                   "Are you sure you want to delete your profile?",
                   [
                     { text: "Cancel", style: "cancel" },
-                    { text: "Yes", onPress: () => console.log("Profile deleted") },
+                    { text: "Yes", onPress: handleLogout },
                   ]
                 );
               }}
@@ -103,7 +101,7 @@ const Profile = () => {
         visible={editProfileVisible}
         onClose={() => setEditProfileVisible(false)}
         onSaveChanges={handleSaveChanges}
-        existingData={{ ...user}}
+        existingData={user}
       />
     </>
   );
