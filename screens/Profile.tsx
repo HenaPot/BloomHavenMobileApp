@@ -47,7 +47,7 @@ const Profile = () => {
             source={
               user.image
                 ? { uri: user.image }
-                : require("@/assets/default-profile.png")
+                : require("../assets/images/default-profile-picture.jpg")
             }
             style={styles.profilePicture}
           />
