@@ -37,7 +37,10 @@ const Login = ({ navigation }: any) => {
         dispatch(setToken(loginRes.token));
         const userRes = await apiGetCurrentUser(loginRes.token);
         dispatch(setUser(userRes));
-        navigation.navigate("Profile");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Main" }],
+        });
       } else {
         alert("Invalid credentials");
       }

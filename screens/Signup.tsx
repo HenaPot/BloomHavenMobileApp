@@ -54,7 +54,10 @@ const Signup = ({ navigation }: any) => {
           },
         });
         dispatch(setUser(userRes.data));
-        navigation.navigate("Profile");
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Main" }],
+        });
       } else {
         alert("Registration failed.");
       }
