@@ -1,45 +1,48 @@
+import React, { useState } from "react";
+import { Text, View, StyleSheet } from "react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { setToken, setUser } from "@/redux/userSlice";
+import { AppDispatch } from "@/redux/store";
+import axios from "axios";
 import BloomTextInput from "@/components/BloomTextInput";
 import BloomButton from "@/components/BloomButton";
 import InputLabel from "@/components/InputLabel";
 import { colors } from "@/constants/colors";
-import React, { useState } from "react";
-import { Text, View, StyleSheet } from "react-native";
-import { useDispatch } from "react-redux";
-import { login } from "@/redux/userSlice";
-import { AppDispatch } from "@/redux/store";
+import { API_URL } from "@/constants/api";
 
-const Login = () => {
+const Login = ({ navigation }: any) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const dispatch = useDispatch<AppDispatch>();
 
-  // Mock API call
   const apiLogin = async (email: string, password: string) => {
-    await new Promise((res) => setTimeout(res, 500));
-    return {
-      id: "5",
-      name: "Hena Potogija",
-      email: "hena.potogija@stu.ibu.edu.ba",
-      date_of_birth: "2025-04-08",
-      username: "hena",
-      image: null,
-      role_id: "1",
-      address: "Francuske revolucije bb",
-      token:
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjp7ImlkIjoiNSIsIm5hbWUiOiJIZW5hIFBvdG9naWphIiwiZW1haWwiOiJoZW5hLnBvdG9naWphQHN0dS5pYnUuZWR1LmJhIiwiZGF0ZV9vZl9iaXJ0aCI6IjIwMjUtMDQtMDgiLCJ1c2VybmFtZSI6ImhlbmEiLCJpbWFnZSI6bnVsbCwicm9sZV9pZCI6IjEiLCJhZGRyZXNzIjoiRnJhbmN1c2tlIHJldm9sdWNpamUgYmIifSwiaWF0IjoxNzQ3Njc4MDk3LCJleHAiOjE3NDc2ODE2OTd9.Swl9XBowBh7tYodacTz0zK9ewJcL8KYQISZYjNUqszA",
-    };
+    const response = await axios.post(`${API_URL}/auth/login`, { email, password });
+    return response.data; // { token: ... }
+  };
+
+  const apiGetCurrentUser = async (token: string) => {
+    const response = await axios.get(`${API_URL}/users/current`, {
+      headers: {
+        Authentication: token,
+      },
+    });
+    return response.data;
   };
 
   const handleLogin = async () => {
-    const response = await apiLogin(email, password);
-    if (response && response.token) {
-      // Separate user and token
-      const { token, ...user } = response;
-      dispatch(login({ user, token }));
-      alert("Logged in as: " + user.email);
-      // navigate to browse all products, etc.
-    } else {
-      alert("Invalid credentials");
+    try {
+      const loginRes = await apiLogin(email, password);
+      
+      if (loginRes && loginRes.token) {
+        dispatch(setToken(loginRes.token));
+        const userRes = await apiGetCurrentUser(loginRes.token);
+        dispatch(setUser(userRes));
+        navigation.navigate("Profile");
+      } else {
+        alert("Invalid credentials");
+      }
+    } catch (err: any) {
+      alert(err.message || "Login failed");
     }
   };
 
@@ -70,7 +73,7 @@ const Login = () => {
           onChangeText={setPassword}
         />
       </View>
-      <Text style={styles.smallText} onPress={() => alert("Navigate to Sign Up")}>
+      <Text style={styles.smallText} onPress={() => navigation.navigate("Signup")}>
         Don't have an account?
         <Text style={styles.underlinedText}> Sign Up</Text>
       </Text>

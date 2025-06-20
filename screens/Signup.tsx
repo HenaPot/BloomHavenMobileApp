@@ -1,15 +1,17 @@
+import React, { useState } from "react";
+import { Text, View, StyleSheet, ScrollView } from "react-native";
+import { useDispatch } from "react-redux";
+import { setToken, setUser } from "@/redux/userSlice";
+import { AppDispatch } from "@/redux/store";
+import axios from "axios";
 import BloomDatePicker from "@/components/BloomDatePicker";
 import BloomTextInput from "@/components/BloomTextInput";
 import BloomButton from "@/components/BloomButton";
 import InputLabel from "@/components/InputLabel";
 import { colors } from "@/constants/colors";
-import React, { useState } from "react";
-import { Text, View, StyleSheet, ScrollView } from "react-native";
-import { useDispatch } from "react-redux";
-import { login } from "@/redux/userSlice";
-import { AppDispatch } from "@/redux/store";
+import { API_URL } from "@/constants/api";
 
-const Signup = () => {
+const Signup = ({ navigation }: any) => {
   const [username, setUsername] = useState("");
   const [date_of_birth, setDateOfBirth] = useState("");
   const [name, setName] = useState("");
@@ -19,21 +21,17 @@ const Signup = () => {
   const [repeatPassword, setRepeatPassword] = useState("");
   const dispatch = useDispatch<AppDispatch>();
 
-  // Mock API call for registration
   const apiRegister = async () => {
-    await new Promise((res) => setTimeout(res, 500));
-    return {
-      id: "5",
-      name: "Hena Potogija",
-      email: "hena.potogija@stu.ibu.edu.ba",
-      date_of_birth: "2025-04-08",
-      username: "hena",
-      image: null,
-      role_id: "1",
-      address: "Francuske revolucije bb",
-      token:
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyIjp7ImlkIjoiNSIsIm5hbWUiOiJIZW5hIFBvdG9naWphIiwiZW1haWwiOiJoZW5hLnBvdG9naWphQHN0dS5pYnUuZWR1LmJhIiwiZGF0ZV9vZl9iaXJ0aCI6IjIwMjUtMDQtMDgiLCJ1c2VybmFtZSI6ImhlbmEiLCJpbWFnZSI6bnVsbCwicm9sZV9pZCI6IjEiLCJhZGRyZXNzIjoiRnJhbmN1c2tlIHJldm9sdWNpamUgYmIifSwiaWF0IjoxNzQ3Njc4MDk3LCJleHAiOjE3NDc2ODE2OTd9.Swl9XBowBh7tYodacTz0zK9ewJcL8KYQISZYjNUqszA",
-    };
+    const response = await axios.post(`${API_URL}/auth/register`, {
+      username,
+      name,
+      email,
+      password,
+      repeat_password_signup: repeatPassword,
+      address,
+      date_of_birth,
+    });
+    return response.data;
   };
 
   const handleSignup = async () => {
@@ -45,14 +43,27 @@ const Signup = () => {
       alert("Passwords do not match.");
       return;
     }
-    const response = await apiRegister();
-    if (response && response.token) {
-      const { token, ...user } = response;
-      dispatch(login({ user, token }));
-      alert("Registration successful! Logged in as: " + user.email);
-      // Optionally navigate to another screen
-    } else {
-      alert("Registration failed.");
+    try {
+      const response = await apiRegister();
+      if (response && response.token) {
+        const { token } = response;
+        dispatch(setToken(token));
+        const userRes = await axios.get(`${API_URL}/users/current`, {
+          headers: {
+            Authentication: token,
+          },
+        });
+        dispatch(setUser(userRes.data));
+        navigation.navigate("Profile");
+      } else {
+        alert("Registration failed.");
+      }
+    } catch (err: any) {
+      alert(
+        err.response?.data?.message ||
+        err.message ||
+        "Registration failed"
+      );
     }
   };
 
@@ -60,105 +71,69 @@ const Signup = () => {
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         <Text style={styles.title}>Sign Up</Text>
-
         <View style={styles.inputContainer}>
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Username" />
-            </View>
+            <InputLabel label="Username" />
             <BloomTextInput
               placeholder="Enter username"
-              autoCorrect={false}
-              inputMode="text"
               value={username}
               onChangeText={setUsername}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Date of Birth" />
-            </View>
+            <InputLabel label="Date of Birth" />
             <BloomDatePicker
               value={date_of_birth}
               onChangeText={setDateOfBirth}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Full Name" />
-            </View>
+            <InputLabel label="Full Name" />
             <BloomTextInput
               placeholder="Enter your name and surname"
-              autoCorrect={false}
-              inputMode="text"
               value={name}
               onChangeText={setName}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Email Address" />
-            </View>
+            <InputLabel label="Email Address" />
             <BloomTextInput
               placeholder="Enter a valid email address"
-              autoCorrect={false}
-              inputMode="email"
-              keyboardType="email-address"
               value={email}
               onChangeText={setEmail}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Address" />
-            </View>
+            <InputLabel label="Address" />
             <BloomTextInput
               placeholder="Enter your address"
-              autoCorrect={false}
-              inputMode="text"
               value={address}
               onChangeText={setAddress}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Password" />
-            </View>
+            <InputLabel label="Password" />
             <BloomTextInput
               placeholder="Enter password"
               secureTextEntry={true}
-              autoCorrect={false}
-              inputMode="text"
               value={password}
               onChangeText={setPassword}
             />
           </View>
-
           <View style={styles.inputGroup}>
-            <View style={styles.labelWrapper}>
-              <InputLabel label="Repeat Password" />
-            </View>
+            <InputLabel label="Repeat Password" />
             <BloomTextInput
               placeholder="Enter the same password"
               secureTextEntry={true}
-              autoCorrect={false}
-              inputMode="text"
               value={repeatPassword}
               onChangeText={setRepeatPassword}
             />
           </View>
         </View>
-
-        <Text style={styles.smallText} onPress={() => alert("Navigate to Log In")}>
-          Have an account? 
+        <Text style={styles.smallText} onPress={() => navigation.navigate("Login")}>
+          Have an account?
           <Text style={styles.underlinedText}> Log In</Text>
         </Text>
-
         <View style={styles.buttonContainer}>
           <BloomButton text="Sign Up" onPress={handleSignup} />
         </View>
@@ -193,10 +168,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   inputGroup: {
-    marginVertical: 10, 
-  },
-  labelWrapper: {
-    marginBottom: 10,
+    marginVertical: 10,
   },
   smallText: {
     fontSize: 14,

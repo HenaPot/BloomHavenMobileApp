@@ -1,0 +1,1 @@
+export const API_URL = "https://bloomhaven-flowershop-app-govf2.ondigitalocean.app";
