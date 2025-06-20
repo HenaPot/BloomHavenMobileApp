@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import axios from "axios";
 import { colors } from "@/constants/colors";
+import SearchAndFilter from "@/components/SearchAndFilter";
 import { API_URL } from "@/constants/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -33,19 +34,51 @@ type Product = {
   images: ProductImage[];
 };
 
+const fallbackImage = "https://via.placeholder.com/200x200?text=No+Image";
+
 const AllProducts = () => {
+  const [filtersVisible, setFiltersVisible] = useState(false);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeFilters, setActiveFilters] = useState<any>({});
   const token = useSelector((state: RootState) => state.user.token);
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParams>>();
 
-  useEffect(() => {
-    const fetchProducts = async () => {
+  // Helper to map filter UI to backend query params
+  const buildQueryParams = (filters: any) => {
+    const params: any = {};
+    if (filters.searchQuery) params.search = filters.searchQuery;
+    // if (filters.categories && filters.categories.length > 0)
+    //   params.category_name = filters.categories.join(",");
+    if (filters.priceRange) {
+      // Example: "$0 - $50", "$50 - $100", "$100 - $250", "$250 - $500", "$500+"
+      const match = filters.priceRange.match(/\$(\d+)\s*-\s*\$(\d+)/);
+      if (match) {
+        params.min_price = match[1];
+        params.max_price = match[2];
+      } else if (filters.priceRange === "$500+") {
+        params.min_price = 500;
+      }
+    }
+    if (filters.sortOption) {
+      if (filters.sortOption === "Price: Low to High") params.sort = "price_asc";
+      if (filters.sortOption === "Price: High to Low") params.sort = "price_desc";
+    }
+    return params;
+  };
+
+  const fetchProducts = useCallback(
+    async (filters = {}) => {
       setLoading(true);
       setError(null);
       try {
-        const response = await axios.get(`${API_URL}/products`, {
+        const params = buildQueryParams(filters);
+        const queryString = new URLSearchParams(params).toString();
+        const url = queryString
+          ? `${API_URL}/products?${queryString}`
+          : `${API_URL}/products`;
+        const response = await axios.get(url, {
           headers: {
             Authentication: token, // or Authorization: `Bearer ${token}` if your backend expects that
           },
@@ -56,12 +89,19 @@ const AllProducts = () => {
       } finally {
         setLoading(false);
       }
-    };
-    fetchProducts();
-  }, [token]);
+    },
+    [token]
+  );
+
+  useEffect(() => {
+    fetchProducts(activeFilters);
+  }, [fetchProducts, activeFilters]);
+
+  const handleApplyFilters = (filters: any) => {
+    setActiveFilters(filters);
+  };
 
   const renderProduct = ({ item }: { item: Product }) => {
-    // Handle image URL (fix missing colon, fallback image)
     let imageUrl =
       item.images && item.images.length > 0
         ? item.images[0].image
@@ -69,46 +109,34 @@ const AllProducts = () => {
     if (imageUrl && imageUrl.startsWith("https//")) {
       imageUrl = imageUrl.replace("https//", "https://");
     }
-    const fallbackImage = "https://via.placeholder.com/200x200?text=No+Image";
-
     return (
       <TouchableOpacity
         style={styles.card}
         onPress={() => navigation.navigate("Product", { id: item.id })}
       >
-        <Image
-          source={{ uri: imageUrl || fallbackImage }}
-          style={styles.image}
-          resizeMode="cover"
-        />
-        <View style={styles.cardBody}>
-          <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productInfo}>
-            <Text style={styles.bold}>Category:</Text> {item.category_name}
-          </Text>
-          <Text style={styles.productInfo}>
-            <Text style={styles.bold}>Price:</Text> ${item.price_each}
-          </Text>
-          <Text style={styles.productInfo}>
-            <Text style={styles.bold}>Quantity:</Text> {item.quantity}
-          </Text>
-          {item.description ? (
-            <Text style={styles.productInfo}>{item.description}</Text>
-          ) : null}
-        </View>
+        <Image source={{ uri: imageUrl || fallbackImage }} style={styles.image} />
+        <Text style={styles.title}>{item.name}</Text>
+        <Text style={styles.category}>{item.category_name}</Text>
+        <Text style={styles.price}>${item.price_each}</Text>
+        <Text style={styles.quantity}>Quantity: {item.quantity}</Text>
+        {item.description ? (
+          <Text style={styles.description}>{item.description}</Text>
+        ) : null}
       </TouchableOpacity>
     );
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>All Products</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>All Products</Text>
+        <TouchableOpacity onPress={() => setFiltersVisible(true)}>
+          <Text style={styles.filterText}>Search and Filter</Text>
+        </TouchableOpacity>
+      </View>
+
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color={colors.secondary}
-          style={{ marginTop: 40 }}
-        />
+        <ActivityIndicator size="large" color={colors.secondary} style={{ marginTop: 40 }} />
       ) : error ? (
         <Text style={styles.error}>{error}</Text>
       ) : products.length === 0 ? (
@@ -116,12 +144,17 @@ const AllProducts = () => {
       ) : (
         <FlatList
           data={products}
-          keyExtractor={(item) => item.id.toString()}
           renderItem={renderProduct}
+          keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={styles.listContainer}
-          numColumns={1}
         />
       )}
+
+      <SearchAndFilter
+        visible={filtersVisible}
+        onClose={() => setFiltersVisible(false)}
+        onApplyFilters={handleApplyFilters}
+      />
     </View>
   );
 };
@@ -133,44 +166,71 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 24,
   },
-  title: {
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  headerTitle: {
     fontSize: 24,
     fontWeight: "bold",
     color: colors.text,
-    marginBottom: 16,
-    alignSelf: "flex-start",
+  },
+  filterText: {
+    fontSize: 16,
+    color: colors.secondary,
+    textDecorationLine: "underline",
   },
   listContainer: {
     paddingBottom: 20,
   },
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    marginBottom: 18,
-    overflow: "hidden",
-    elevation: 2,
+    borderRadius: 10,
+    marginVertical: 10,
+    padding: 15,
+    alignItems: "center",
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#eee",
   },
   image: {
     width: "100%",
     height: 200,
+    resizeMode: "cover",
+    borderRadius: 10,
+    marginBottom: 10,
     backgroundColor: "#eee",
   },
-  cardBody: {
-    padding: 14,
-  },
-  productName: {
+  title: {
     fontSize: 18,
     fontWeight: "bold",
-    color: colors.primary,
-    marginBottom: 6,
+    color: colors.text,
+    marginBottom: 5,
+    textAlign: "center",
   },
-  productInfo: {
+  category: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    marginBottom: 5,
+  },
+  price: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: colors.secondary,
+  },
+  quantity: {
     fontSize: 14,
     color: colors.text,
-    marginBottom: 2,
+    marginBottom: 5,
   },
-  bold: {
-    fontWeight: "bold",
+  description: {
+    fontSize: 13,
+    color: colors.text,
+    marginBottom: 5,
+    textAlign: "center",
   },
   error: {
     color: "red",

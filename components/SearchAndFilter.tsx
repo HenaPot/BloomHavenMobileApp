@@ -78,14 +78,6 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
           />
         </View>
 
-        {/* Categories */}
-        <Text style={styles.sectionTitle}>Select Categories</Text>
-        <CategoryChips
-          categories={categories}
-          selectedCategories={selectedCategories}
-          onToggleCategory={toggleCategory}
-        />
-
         {/* Price Range */}
         <Text style={styles.sectionTitle}>Price Range</Text>
         <OptionButtonGroup
