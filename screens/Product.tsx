@@ -1,50 +1,144 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
   ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
+import { useRoute, useNavigation } from "@react-navigation/native";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import axios from "axios";
 import BloomTextInput from "@/components/BloomTextInput";
 import BloomButton from "@/components/BloomButton";
 import { colors } from "@/constants/colors";
+import { API_URL } from "@/constants/api";
+
+type ProductImage = {
+  id: number;
+  product_id: number;
+  image: string;
+};
+
+type ProductType = {
+  id: number;
+  name: string;
+  category_name: string;
+  quantity: number;
+  price_each: number;
+  description: string;
+  images: ProductImage[];
+};
+
+const fallbackImage = "https://via.placeholder.com/300x300?text=No+Image";
 
 const Product = () => {
-  const { id, title, price, description, images } = {
-    id: "1",
-    title: "Stylish Running Shoes",
-    price: "$79.99",
-    description: "These running shoes are stylish and comfortable, perfect for daily use.",
-    images: [
-      "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg/960px-Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg",
-      "https://images.contentstack.io/v3/assets/bltcedd8dbd5891265b/blt4a4af7e6facea579/6668df6ceca9a600983250ac/beautiful-flowers-hero.jpg?q=70&width=3840&auto=webp",
-    ],
-  };
+  const route = useRoute();
+  const navigation = useNavigation();
+  const { id } = route.params as { id: number };
+  const token = useSelector((state: RootState) => state.user.token);
+
+  const [product, setProduct] = useState<ProductType | null>(null);
+  const [mainImage, setMainImage] = useState<string | null>(null);
   const [quantity, setQuantity] = useState("1");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Set header tint color to black
+  useEffect(() => {
+    navigation.setOptions?.({ headerTintColor: "#000" });
+  }, [navigation]);
+
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`${API_URL}/products/${id}`, {
+          headers: {
+            Authentication: token, // or Authorization: `Bearer ${token}` if your backend expects that
+          },
+        });
+        setProduct(response.data);
+        // Set main image
+        let mainImg = response.data.images?.[0]?.image || null;
+        if (mainImg && mainImg.startsWith("https//")) {
+          mainImg = mainImg.replace("https//", "https://");
+        }
+        setMainImage(mainImg || fallbackImage);
+      } catch (err: any) {
+        setError("Failed to load product.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProduct();
+  }, [id, token]);
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color={colors.secondary} />
+      </View>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.error}>{error || "Product not found."}</Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
       <View style={styles.container}>
         {/* Product Title */}
-        <Text style={styles.title}>{title}</Text>
+        <Text style={styles.title}>{product.name}</Text>
 
         {/* Product ID */}
-        <Text style={styles.id}>Product ID: {id}</Text>
+        <Text style={styles.id}>Product ID: {product.id}</Text>
 
         {/* Product Price */}
-        <Text style={styles.price}>Price: {price}</Text>
+        <Text style={styles.price}>Price: ${product.price_each}</Text>
 
         {/* Product Images */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageContainer}>
-          {images.map((image: string, index: number) => (
-            <Image key={index} source={{ uri: image }} style={styles.image} />
-          ))}
+        <Image
+          source={{ uri: mainImage || fallbackImage }}
+          style={styles.mainImage}
+          resizeMode="cover"
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.imageContainer}
+        >
+          {product.images.map((img, idx) => {
+            let imgUrl = img.image;
+            if (imgUrl && imgUrl.startsWith("https//")) {
+              imgUrl = imgUrl.replace("https//", "https://");
+            }
+            return (
+              <TouchableOpacity
+                key={img.id}
+                onPress={() => setMainImage(imgUrl || fallbackImage)}
+              >
+                <Image
+                  source={{ uri: imgUrl || fallbackImage }}
+                  style={styles.image}
+                />
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         {/* Product Description */}
         <Text style={styles.sectionTitle}>Description</Text>
-        <Text style={styles.description}>{description}</Text>
+        <Text style={styles.description}>{product.description}</Text>
 
         {/* Quantity Input */}
         <Text style={styles.sectionTitle}>Quantity</Text>
@@ -83,6 +177,12 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
   },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: colors.primary,
+  },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -103,16 +203,25 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+  mainImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 10,
+    marginBottom: 10,
+    backgroundColor: "#eee",
+  },
   imageContainer: {
-    height: 300, // Set a fixed height for the image container
+    height: 70,
     marginBottom: 20,
+    alignSelf: "flex-start",
   },
   image: {
-    width: 300,
-    height: "100%", // Make the image fill the container height
+    width: 70,
+    height: 70,
     resizeMode: "cover",
     borderRadius: 10,
     marginRight: 10,
+    backgroundColor: "#eee",
   },
   sectionTitle: {
     fontSize: 16,
@@ -130,6 +239,11 @@ const styles = StyleSheet.create({
   buttonContainer: {
     width: "100%",
     marginTop: 20,
+  },
+  error: {
+    color: "red",
+    fontSize: 18,
+    textAlign: "center",
   },
 });
 
