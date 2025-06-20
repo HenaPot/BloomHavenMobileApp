@@ -5,11 +5,13 @@ import BottomTabNavigator from "./BottomTabNavigator";
 import { colors } from "@/constants/colors";
 import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
+import Product from "@/screens/Product"; // <-- import your Product screen
 
 export type RootStackParams = {
   Login: undefined;
   Signup: undefined;
   Main: undefined;
+  Product: { id: number };
 };
 
 const RootStack = createNativeStackNavigator<RootStackParams>();
@@ -27,6 +29,11 @@ const RootStackNav = () => {
             name="Main"
             component={BottomTabNavigator}
             options={{ headerShown: false }}
+          />
+          <RootStack.Screen
+            name="Product"
+            component={Product}
+            options={{ headerShown: true, title: "Product Details" }}
           />
         </>
       ) : (

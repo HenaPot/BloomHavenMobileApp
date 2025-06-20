@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,72 +6,122 @@ import {
   FlatList,
   Image,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import axios from "axios";
 import { colors } from "@/constants/colors";
-import SearchAndFilter from "@/components/SearchAndFilter";
+import { API_URL } from "@/constants/api";
+import { useNavigation } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RootStackParams } from "@/navigation/RootStackNavigator";
 
-const mockProducts = [
-  {
-    id: "1",
-    title: "Stylish Running Shoes",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg/960px-Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg",
-    category: "Shoes",
-    price: "$79.99",
-  },
-  {
-    id: "2",
-    title: "Elegant Wrist Watch",
-    image: "https://images.contentstack.io/v3/assets/bltcedd8dbd5891265b/blt4a4af7e6facea579/6668df6ceca9a600983250ac/beautiful-flowers-hero.jpg?q=70&width=3840&auto=webp",
-    category: "Watches",
-    price: "$199.99",
-  },
-  {
-    id: "3",
-    title: "Trendy Handbag",
-    image: "https://www.gardenia.net/wp-content/uploads/2023/05/types-of-flowers.webp",
-    category: "Bags",
-    price: "$49.99",
-  },
-];
+type ProductImage = {
+  id: number;
+  product_id: number;
+  image: string;
+};
+
+type Product = {
+  id: number;
+  name: string;
+  category_name: string;
+  quantity: number;
+  price_each: number;
+  description: string;
+  images: ProductImage[];
+};
 
 const AllProducts = () => {
-  const [filtersVisible, setFiltersVisible] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const token = useSelector((state: RootState) => state.user.token);
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParams>>();
 
-  const handleApplyFilters = (filters: any) => {
-    console.log("Applied Filters:", filters);
-    // Apply filtering logic here
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`${API_URL}/products`, {
+          headers: {
+            Authentication: token, // or Authorization: `Bearer ${token}` if your backend expects that
+          },
+        });
+        setProducts(response.data);
+      } catch (err: any) {
+        setError("Failed to load products.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, [token]);
+
+  const renderProduct = ({ item }: { item: Product }) => {
+    // Handle image URL (fix missing colon, fallback image)
+    let imageUrl =
+      item.images && item.images.length > 0
+        ? item.images[0].image
+        : undefined;
+    if (imageUrl && imageUrl.startsWith("https//")) {
+      imageUrl = imageUrl.replace("https//", "https://");
+    }
+    const fallbackImage = "https://via.placeholder.com/200x200?text=No+Image";
+
+    return (
+      <TouchableOpacity
+        style={styles.card}
+        onPress={() => navigation.navigate("Product", { id: item.id })}
+      >
+        <Image
+          source={{ uri: imageUrl || fallbackImage }}
+          style={styles.image}
+          resizeMode="cover"
+        />
+        <View style={styles.cardBody}>
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productInfo}>
+            <Text style={styles.bold}>Category:</Text> {item.category_name}
+          </Text>
+          <Text style={styles.productInfo}>
+            <Text style={styles.bold}>Price:</Text> ${item.price_each}
+          </Text>
+          <Text style={styles.productInfo}>
+            <Text style={styles.bold}>Quantity:</Text> {item.quantity}
+          </Text>
+          {item.description ? (
+            <Text style={styles.productInfo}>{item.description}</Text>
+          ) : null}
+        </View>
+      </TouchableOpacity>
+    );
   };
-
-  const renderProduct = ({ item }: { item: typeof mockProducts[0] }) => (
-    <View style={styles.card}>
-      <Image source={{ uri: item.image }} style={styles.image} />
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.category}>{item.category}</Text>
-      <Text style={styles.price}>{item.price}</Text>
-    </View>
-  );
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>All Products</Text>
-        <TouchableOpacity onPress={() => setFiltersVisible(true)}>
-          <Text style={styles.filterText}>Search and Filter</Text>
-        </TouchableOpacity>
-      </View>
-
-      <FlatList
-        data={mockProducts}
-        renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.listContainer}
-      />
-
-      <SearchAndFilter
-        visible={filtersVisible}
-        onClose={() => setFiltersVisible(false)}
-        onApplyFilters={handleApplyFilters}
-      />
+      <Text style={styles.title}>All Products</Text>
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color={colors.secondary}
+          style={{ marginTop: 40 }}
+        />
+      ) : error ? (
+        <Text style={styles.error}>{error}</Text>
+      ) : products.length === 0 ? (
+        <Text style={styles.empty}>No products found.</Text>
+      ) : (
+        <FlatList
+          data={products}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderProduct}
+          contentContainerStyle={styles.listContainer}
+          numColumns={1}
+        />
+      )}
     </View>
   );
 };
@@ -81,60 +131,56 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.primary,
     paddingHorizontal: 20,
-    paddingTop: 60,
+    paddingTop: 24,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  headerTitle: {
+  title: {
     fontSize: 24,
     fontWeight: "bold",
     color: colors.text,
-  },
-  filterText: {
-    fontSize: 16,
-    color: colors.secondary,
-    textDecorationLine: "underline",
+    marginBottom: 16,
+    alignSelf: "flex-start",
   },
   listContainer: {
     paddingBottom: 20,
   },
   card: {
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    marginVertical: 10,
-    padding: 15,
-    alignItems: "center",
-    width: "100%",
-    borderWidth: 1,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    marginBottom: 18,
+    overflow: "hidden",
+    elevation: 2,
   },
   image: {
     width: "100%",
     height: 200,
-    resizeMode: "cover",
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: "#eee",
   },
-  title: {
+  cardBody: {
+    padding: 14,
+  },
+  productName: {
     fontSize: 18,
     fontWeight: "bold",
+    color: colors.primary,
+    marginBottom: 6,
+  },
+  productInfo: {
+    fontSize: 14,
     color: colors.text,
-    marginBottom: 5,
+    marginBottom: 2,
+  },
+  bold: {
+    fontWeight: "bold",
+  },
+  error: {
+    color: "red",
+    marginTop: 40,
     textAlign: "center",
   },
-  category: {
-    fontSize: 14,
-    fontWeight: "600",
+  empty: {
     color: colors.text,
-    marginBottom: 5,
-  },
-  price: {
-    fontSize: 16,
-    fontWeight: "bold",
-    color: colors.secondary,
+    marginTop: 40,
+    textAlign: "center",
   },
 });
 
