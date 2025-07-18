@@ -14,6 +14,15 @@ export type Product = {
   images: ProductImage[];
 };
 
+export type OrderType = {
+  order_id: number;
+  order_date: string;
+  product_names: string;
+  quantities: string;
+  total_price: number;
+  status_name: string;
+};
+
 export type CartProductImage = {
   id: number;
   product_id: number;
