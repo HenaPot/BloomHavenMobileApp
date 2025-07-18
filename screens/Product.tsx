@@ -85,6 +85,26 @@ const Product = () => {
     }
   };
 
+  const handleAddToWishlist = async () => {
+    if (!product) return;
+    const qty = parseInt(quantity) || 1;
+    try {
+      await axios.post(
+        `${API_URL}/wishlist/add`,
+        {
+          product_id: product.id,
+          quantity: qty,
+        },
+        {
+          headers: { Authentication: token },
+        }
+      );
+      Alert.alert("Success", "Added to wishlist!");
+    } catch {
+      Alert.alert("Error", "Failed to add to wishlist.");
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -165,7 +185,7 @@ const Product = () => {
           />
           <BloomButton
             text="Add to Wishlist"
-            onPress={() => alert("Added to Wishlist")}
+            onPress={handleAddToWishlist}
             type="secondary"
           />
         </View>

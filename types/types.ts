@@ -38,3 +38,11 @@ export type CartItem = {
   cart_quantity: number;
   images: CartProductImage[];
 };
+
+export type WishlistItem = {
+  product_id: number;
+  name: string;
+  price: number;
+  cart_quantity: number;
+  images: { id: number; product_id: number; image: string }[];
+};
