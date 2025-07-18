@@ -16,22 +16,7 @@ import BloomTextInput from "@/components/BloomTextInput";
 import BloomButton from "@/components/BloomButton";
 import { colors } from "@/constants/colors";
 import { API_URL } from "@/constants/api";
-
-type ProductImage = {
-  id: number;
-  product_id: number;
-  image: string;
-};
-
-type ProductType = {
-  id: number;
-  name: string;
-  category_name: string;
-  quantity: number;
-  price_each: number;
-  description: string;
-  images: ProductImage[];
-};
+import { Product as ProductType } from "../types/types";
 
 const fallbackImage = "https://via.placeholder.com/300x300?text=No+Image";
 

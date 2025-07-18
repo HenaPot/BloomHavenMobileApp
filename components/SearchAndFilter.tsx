@@ -60,7 +60,7 @@ const SearchAndFilter: React.FC<SearchAndFilterProps> = ({
     setSelectedCategories([]);
     setSelectedPriceRange(null);
     setSelectedSortOption(null);
-    onClose();
+    applyFilters();
   };
 
   return (

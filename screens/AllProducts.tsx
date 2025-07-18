@@ -17,22 +17,8 @@ import { API_URL } from "@/constants/api";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RootStackParams } from "@/navigation/RootStackNavigator";
+import { Product, ProductImage } from "../types/types";
 
-type ProductImage = {
-  id: number;
-  product_id: number;
-  image: string;
-};
-
-type Product = {
-  id: number;
-  name: string;
-  category_name: string;
-  quantity: number;
-  price_each: number;
-  description: string;
-  images: ProductImage[];
-};
 
 const fallbackImage = "https://via.placeholder.com/200x200?text=No+Image";
 

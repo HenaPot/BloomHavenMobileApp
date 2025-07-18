@@ -20,6 +20,7 @@ interface PurchaseBottomSheetProps {
     postalCode: string;
     city: string;
     country: string;
+    phone_number: string; // <-- Add phone number here
   }) => void;
 }
 
@@ -34,6 +35,7 @@ const PurchaseBottomSheet: React.FC<PurchaseBottomSheetProps> = ({
   const [postalCode, setPostalCode] = useState("");
   const [city, setCity] = useState("");
   const [country, setCountry] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
 
   // Helper to clear all fields
   const clearFields = () => {
@@ -43,6 +45,7 @@ const PurchaseBottomSheet: React.FC<PurchaseBottomSheetProps> = ({
     setPostalCode("");
     setCity("");
     setCountry("");
+    setPhoneNumber(""); // <-- Clear phone number
   };
 
   // Clear fields when modal is closed
@@ -60,6 +63,7 @@ const PurchaseBottomSheet: React.FC<PurchaseBottomSheetProps> = ({
       postalCode,
       city,
       country,
+      phone_number: phoneNumber, // <-- Pass phone number
     });
     clearFields();
   };
@@ -114,6 +118,14 @@ const PurchaseBottomSheet: React.FC<PurchaseBottomSheetProps> = ({
           placeholder="Enter your country"
           value={country}
           onChangeText={setCountry}
+        />
+
+        <Text style={styles.label}>Phone Number</Text>
+        <BloomTextInput
+          placeholder="Enter your phone number"
+          value={phoneNumber}
+          onChangeText={setPhoneNumber}
+          keyboardType="phone-pad"
         />
 
         <Text style={styles.infoText}>

@@ -1,49 +1,131 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, FlatList} from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert } from "react-native";
 import CartProductCard from "../components/CartProductCard";
 import { colors } from "@/constants/colors";
 import PurchaseBottomSheet from "@/components/PurchaseBottomSheet";
 import BloomButton from "@/components/BloomButton";
+import axios from "axios";
+import { useSelector } from "react-redux";
+import { RootState } from "@/redux/store";
+import { API_URL } from "@/constants/api";
+import { CartItem } from "@/types/types";
 
-// Example cart data
-const initialCart = [
-  {
-    id: "1",
-    title: "Stylish Running Shoes",
-    image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/39/Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg/960px-Bachelor%27s_button%2C_Basket_flower%2C_Boutonniere_flower%2C_Cornflower_-_3.jpg",
-    category: "Shoes",
-    price: 79.99,
-    quantity: 1,
-  },
-  {
-    id: "2",
-    title: "Elegant Wrist Watch",
-    image: "https://images.contentstack.io/v3/assets/bltcedd8dbd5891265b/blt4a4af7e6facea579/6668df6ceca9a600983250ac/beautiful-flowers-hero.jpg?q=70&width=3840&auto=webp",
-    category: "Watches",
-    price: 199.99,
-    quantity: 2,
-  },
-];
 
 const ShoppingCart = () => {
-  const [cart, setCart] = useState(initialCart);
+  const token = useSelector((state: RootState) => state.user.token);
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [purchaseVisible, setPurchaseVisible] = useState(false);
 
-  const handleQuantityChange = (id: string, newQuantity: number) => {
-    setCart((prev) =>
-      prev.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item
-      )
+  // Load cart from backend
+  const fetchCart = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/cart`, {
+        headers: { Authentication: token },
+      });
+      setCart(response.data);
+    } catch (err) {
+      Alert.alert("Error", "Failed to load cart.");
+      setCart([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, [token]);
+
+  // Update quantity
+  const handleQuantityChange = async (id: string, newQuantity: number) => {
+    try {
+      await axios.put(`${API_URL}/cart/update`, {
+        product_id: Number(id),
+        quantity: newQuantity,
+      }, {
+        headers: { Authentication: token },
+      });
+      fetchCart();
+    } catch (err) {
+      Alert.alert("Error", "Failed to update cart quantity.");
+    }
+  };
+
+  // Remove item
+  const handleRemove = async (id: string) => {
+    try {
+      await axios.delete(`${API_URL}/cart/remove/${id}`, {
+        headers: { Authentication: token },
+      });
+      fetchCart();
+    } catch (err) {
+      Alert.alert("Error", "Failed to remove item.");
+    }
+  };
+
+  // Clear cart
+  const handleClearCart = async () => {
+    Alert.alert(
+      "Clear Cart",
+      "Are you sure you want to clear your cart?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Clear",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await axios.delete(`${API_URL}/cart/clear`, {
+                headers: { Authentication: token },
+              });
+              fetchCart();
+            } catch (err) {
+              Alert.alert("Error", "Failed to clear cart.");
+            }
+          },
+        },
+      ]
     );
   };
 
-  const handleRemove = (id: string) => {
-    setCart((prev) => prev.filter((item) => item.id !== id));
+  // Checkout
+  const handleCheckout = async (orderDetails: any) => {
+    try {
+      // Convert to backend format
+      const payload = {
+        ...orderDetails,
+        postal_code: orderDetails.postalCode,
+        products: cart.map(item => ({
+          product_id: item.product_id,
+          quantity: item.cart_quantity,
+        })),
+      };
+      delete payload.postalCode; // remove camelCase
+
+      await axios.post(`${API_URL}/order/add`, payload, {
+        headers: { Authentication: token },
+      });
+
+      await axios.delete(`${API_URL}/cart/clear`, {
+        headers: { Authentication: token },
+      });
+
+      Alert.alert("Success", "Order placed! You will pay once the flowers arrive.");
+      setPurchaseVisible(false); // Close the modal
+      fetchCart(); // Refresh cart after purchase
+    } catch (err) {
+      Alert.alert("Error", "Failed to create order.");
+      console.error("Checkout error:", err);
+    }
   };
 
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const totalItems = cart.reduce((sum, item) => sum + item.cart_quantity, 0);
   const totalPrice = cart
-    .reduce((sum, item) => sum + item.price * item.quantity, 0)
+    .reduce(
+      (sum, item) => sum + (item.price * item.cart_quantity),
+      0
+    )
     .toFixed(2);
 
   return (
@@ -53,25 +135,47 @@ const ShoppingCart = () => {
         Items: <Text style={styles.bold}>{totalItems}</Text> | Total:{" "}
         <Text style={styles.bold}>${totalPrice}</Text>
       </Text>
-      <FlatList
-        data={cart}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <CartProductCard
-            product={item}
-            onQuantityChange={handleQuantityChange}
-            onRemove={handleRemove}
-          />
-        )}
-        contentContainerStyle={styles.listContainer}
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={colors.secondary} style={{ marginTop: 40 }} />
+      ) : cart.length === 0 ? (
+        <Text style={{ textAlign: "center", color: colors.text, marginTop: 40 }}>Your cart is empty.</Text>
+      ) : (
+        <FlatList
+          data={cart}
+          keyExtractor={(item) => item.product_id.toString()}
+          renderItem={({ item }) => (
+            <CartProductCard
+              product={{
+                id: item.product_id.toString(),
+                title: item.name,
+                image: (item.images && item.images.length > 0)
+                  ? (item.images[0].image.startsWith("https//")
+                      ? item.images[0].image.replace("https//", "https://")
+                      : item.images[0].image)
+                  : "https://via.placeholder.com/90x90?text=No+Image",
+                category: `Category ${item.category_id}`,
+                price: item.price,
+                quantity: item.cart_quantity,
+              }}
+              onQuantityChange={handleQuantityChange}
+              onRemove={handleRemove}
+            />
+          )}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
 
       {/* Purchase Now Button */}
       <View style={styles.buttonContainer}>
-        <BloomButton    
+        <BloomButton
           text="Purchase Now"
           onPress={() => setPurchaseVisible(true)}
-          style={{ marginBottom: 10 }}  
+          style={{ marginBottom: 10 }}
+        />
+        <BloomButton
+          text="Clear Cart"
+          onPress={handleClearCart}
+          type="danger"
         />
       </View>
 
@@ -79,10 +183,7 @@ const ShoppingCart = () => {
       <PurchaseBottomSheet
         visible={purchaseVisible}
         onClose={() => setPurchaseVisible(false)}
-        onCheckout={(orderDetails) => {
-          setPurchaseVisible(false);
-          alert("Order placed! You will pay once the flowers arrive.");
-        }}
+        onCheckout={handleCheckout}
       />
     </View>
   );
