@@ -7,6 +7,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSelector } from "react-redux";
@@ -62,6 +63,27 @@ const Product = () => {
     };
     fetchProduct();
   }, [id, token]);
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    const qty = parseInt(quantity) || 1;
+    try {
+      await axios.post(
+        `${API_URL}/cart/add`,
+        {
+          product_id: product.id,
+          quantity: qty,
+        },
+        {
+          headers: { Authentication: token },
+        }
+      );
+      Alert.alert("Success", `Added ${qty} item(s) to cart!`);
+    } catch (err) {
+      Alert.alert("Error", "Failed to add to cart.");
+      console.error("Add to cart error:", err);
+    }
+  };
 
   if (loading) {
     return (
@@ -138,7 +160,7 @@ const Product = () => {
         <View style={styles.buttonContainer}>
           <BloomButton
             text="Add to Cart"
-            onPress={() => alert(`Added ${quantity} item(s) to cart`)}
+            onPress={handleAddToCart}
             style={{ marginBottom: 10 }}
           />
           <BloomButton

@@ -9,6 +9,7 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/redux/store";
 import { API_URL } from "@/constants/api";
 import { CartItem } from "@/types/types";
+import { useFocusEffect } from "@react-navigation/native";
 
 
 const ShoppingCart = () => {
@@ -33,9 +34,11 @@ const ShoppingCart = () => {
     }
   };
 
-  useEffect(() => {
-    fetchCart();
-  }, [token]);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchCart();
+    }, [token])
+  );
 
   // Update quantity
   const handleQuantityChange = async (id: string, newQuantity: number) => {
